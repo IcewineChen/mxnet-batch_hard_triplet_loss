@@ -23,5 +23,7 @@ def load_dataset(csv_file, image_root, fail_on_missing=True):
                     ' dataset.'.format(missing_count))
                 fids = fids[np.logical_not(missing)]
                 pids = pids[np.logical_not(missing)]
-
-    return pids, fids
+    root_fids = []
+    for file in fids:
+        root_fids.append(image_root + file)
+    return pids, root_fids

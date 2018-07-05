@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData">
+    <serverData>
+      <paths name="chr@e4.pkuml.org:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/chr/experiment/mxnet-batch" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="mxnet-batch_hard">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/chr/experiment/mxnet-batch" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>
