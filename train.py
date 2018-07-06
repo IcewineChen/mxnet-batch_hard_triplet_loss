@@ -228,7 +228,7 @@ def main():
     # model.bind(data_shapes=train_data.provide_data,
     #            label_shapes=train_data.provide_label)
     # model.init_params(initializer=mx.initializer.Xavier(magnitude=2.))
-    """
+
     model = mx.model.FeedForward(
         allow_extra_params=True,
         ctx=devs,
@@ -239,8 +239,8 @@ def main():
         wd=0.001,
         momentum=0.9,
         initializer=mx.initializer.Xavier(rnd_type="gaussian", factor_type="in", magnitude=2),
-        optimizer=optimizer
-        #lr_scheduler = multi_factor_scheduler(begin_epoch, epoch_size, step=[30, 60, 90], factor=0.1)
+        optimizer=optimizer,
+        lr_scheduler = multi_factor_scheduler(0, 200, step=[30, 60, 90], factor=0.1)
     )
 
     model.fit(
@@ -252,7 +252,7 @@ def main():
         batch_end_callback=mx.callback.Speedometer(args.batch_size,20),
         epoch_end_callback=mx.callback.do_checkpoint(args.model_prefix)
     )
-    """
+
 
 
 if __name__ == '__main__':

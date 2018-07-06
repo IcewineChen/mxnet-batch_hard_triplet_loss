@@ -2,9 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="6cb77130-a5f3-4f74-9099-eb5de11b3978" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/batch_hard.py" beforeDir="false" afterPath="$PROJECT_DIR$/batch_hard.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/resnet.py" beforeDir="false" afterPath="$PROJECT_DIR$/resnet.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/train.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -24,8 +21,8 @@
       <file leaf-file-name="train.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="206">
-              <caret line="183" lean-forward="true" selection-start-line="183" selection-end-line="183" />
+            <state relative-caret-position="274">
+              <caret line="252" column="71" lean-forward="true" selection-start-line="252" selection-start-column="71" selection-end-line="252" selection-end-column="71" />
               <folding>
                 <element signature="e#47#65#0" expanded="true" />
               </folding>
@@ -104,8 +101,8 @@
     <packageJsonPaths />
   </component>
   <component name="ProjectFrameBounds" extendedState="7">
-    <option name="x" value="286" />
-    <option name="y" value="76" />
+    <option name="x" value="752" />
+    <option name="y" value="68" />
     <option name="width" value="734" />
     <option name="height" value="907" />
   </component>
@@ -609,8 +606,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="206">
-          <caret line="183" lean-forward="true" selection-start-line="183" selection-end-line="183" />
+        <state relative-caret-position="274">
+          <caret line="252" column="71" lean-forward="true" selection-start-line="252" selection-start-column="71" selection-end-line="252" selection-end-column="71" />
           <folding>
             <element signature="e#47#65#0" expanded="true" />
           </folding>
