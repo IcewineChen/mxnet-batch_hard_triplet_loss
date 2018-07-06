@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding = utf-8 -*-
 import mxnet as mx
-import batch_hard
 import numpy as np
 import cv2
 import os
@@ -46,7 +45,7 @@ class DataIter(mx.io.DataIter):
         self.labels = labels   
         self.cursor = -self.batch_size
 
-        self.provide_data = [("samples", (self.batch_size, 3, height, width))]
+        self.provide_data = [( "samples", (self.batch_size, 3, height, width))]
         #self.provide_data = [("samples", (self.batch_size, 3, height, width)),
         #                     ("pos_mask", (self.batch_size, self.batch_size)),
         #                     ("neg_mask", (self.batch_size, self.batch_size))]
@@ -138,8 +137,11 @@ def network(units, embedding_dims, num_stage, filter_list, num_class, bottle_nec
     # neg_mask = mx.sym.Variable('neg_mask')
     # labels = mx.sym.Variable('pids')
     # data = mx.sym.expand_dims(data,axis=0)
-    embeddings = resnet.resnet(
+    tripletloss = resnet.resnet(
         data=samples,
+        labels=labels,
+        batch_size=batch_size,
+        margin=0.3,
         units=units,
         embedding_dims=embedding_dims,
         num_stage=num_stage,
@@ -148,15 +150,19 @@ def network(units, embedding_dims, num_stage, filter_list, num_class, bottle_nec
         data_type="imagenet",
         bottle_neck=bottle_neck,
         bn_mom=bn_mom,
-        workspace=workspace)
+        workspace=workspace,
+        type='euclidean'
+    )
+    # test
+    return tripletloss
     # embeddings = mx.sym.expand_dims(embeddings,axis=0)
-    return batch_hard.batch_hard_triplet_loss(embeddings=embeddings,
-                                                   #pos_mask=pos_mask,
-                                                   #neg_mask=neg_mask,
-                                                   labels=labels,
-                                                   shape=batch_size,
-                                                   margin=margin,
-                                                   type=type)
+    # return batch_hard.batch_hard_triplet_loss(embeddings=embeddings,
+    #                                               #pos_mask=pos_mask,
+    #                                               #neg_mask=neg_mask,
+    #                                               shape=batch_size,
+    #                                               labels=labels,
+    #                                               margin=margin,
+    #                                               type=type)
 
 def multi_factor_scheduler(begin_epoch,epoch_size,step,factor=0.1):
     step_ = [epoch_size * (x - begin_epoch) for x in step if x -begin_epoch > 0]
@@ -206,7 +212,7 @@ def main():
         raise TypeError("This dataset has not been supported")
 
     symbol = network(units=units,embedding_dims=128,num_stage=4,filter_list=[64, 256, 512, 1024, 2048],num_class=num_classes,
-                     bottle_neck=True,bn_mom=0.9,workspace=512,margin=0.3,batch_size=args.batch_size)
+                     bottle_neck=True,bn_mom=0.9,workspace=512,margin=0.3,batch_size=args.batch_size,type='euclidean')
 
     if args.pretrain_used == False:
         begin_epoch = 0
@@ -216,16 +222,14 @@ def main():
     epoch_size = max(int(len(images) / args.batch_size / kv.num_workers), 1)
     train_data = DataIter(images=images,labels=labels,batch_size=args.batch_size,height=args.height,
                          width=args.width,process_num=args.process_num)
-    optimizer = mx.optimizer.SGD(momentum=0.99)
-    model = mx.mod.Module(symbol,data_names=["samples"],label_names=["labels"])
-    model.bind(data_shapes=train_data.provide_data,
-               label_shapes=train_data.provide_label)
-    model.init_params()
-    model.fit(train_data,
-              optimizer_params={'learning_params':0.01,'momentum':0.9},
-              num_epoch=0)
+
+    optimizer = mx.optimizer.SGD({'learning_rate': 0.01, 'momentum': 0.99})
+    # model = mx.mod.Module(symbol,data_names=["samples"],label_names=["labels"],context=devs)
+    # model.bind(data_shapes=train_data.provide_data,
+    #            label_shapes=train_data.provide_label)
+    # model.init_params(initializer=mx.initializer.Xavier(magnitude=2.))
     """
-    model = mx.model.Module(
+    model = mx.model.FeedForward(
         allow_extra_params=True,
         ctx=devs,
         symbol=symbol,
@@ -235,15 +239,16 @@ def main():
         wd=0.001,
         momentum=0.9,
         initializer=mx.initializer.Xavier(rnd_type="gaussian", factor_type="in", magnitude=2),
-        optimizer=optimizer,
-        lr_scheduler= 0.1*1e2
-        #multi_factor_scheduler(begin_epoch, epoch_size, step=[30, 60, 90], factor=0.1)
+        optimizer=optimizer
+        #lr_scheduler = multi_factor_scheduler(begin_epoch, epoch_size, step=[30, 60, 90], factor=0.1)
     )
+
     model.fit(
-        X=train_data,
-        eval_metric=mx.metric.CrossEntropy(),
-        #eval_metric=Auc(),
-        kvstore=kv,
+        train_data,
+        # num_epoch=0,
+        # eval_metric='acc'
+        eval_metric=Auc(),
+        # kvstore=kv,
         batch_end_callback=mx.callback.Speedometer(args.batch_size,20),
         epoch_end_callback=mx.callback.do_checkpoint(args.model_prefix)
     )
