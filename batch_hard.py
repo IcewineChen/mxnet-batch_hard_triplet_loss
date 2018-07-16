@@ -38,14 +38,12 @@ def _pairwise_distances(embeddings, type='euclidean'):
     # distances = distances * (1.0 - mask)
     return distances
 
-
-
 def batch_hard_triplet_loss(embeddings, labels, shape, margin, type='euclidean'):
     pairwise_dist = _pairwise_distances(embeddings)
     pos_mask = get_pos_mask(labels, shape)
     neg_mask = get_neg_mask(labels)
     anchor_positive_dist = mx.sym.dot(pos_mask, pairwise_dist)
-
+    #print(anchor_positive_dist.infer_shape_partial(samples=(72,3,256,144)))
     hardest_positive_dist = mx.sym.max(anchor_positive_dist, axis=1, keepdims=True)
     #mxboard.summary.scalar_summary("hardest_positive_dist",mx.sym.mean(hardest_positive_dist))
 
@@ -56,8 +54,10 @@ def batch_hard_triplet_loss(embeddings, labels, shape, margin, type='euclidean')
 
     hardest_negative_dist = mx.sym.min(anchor_negative_dist, axis=1, keepdims=True)
     #mxboard.summary.scalar_summary("hardest_negative_dist", mx.sym.mean(hardest_negative_dist))
-
-    triplet_loss = mx.sym.maximum(hardest_positive_dist - hardest_negative_dist + margin, 0.0)
+    margin = mx.sym.full(shape=(shape,shape),val=margin)
+    hard_mining = mx.sym.broadcast_add(mx.sym.broadcast_sub(hardest_positive_dist,hardest_negative_dist),margin)
+    triplet_loss = mx.sym.maximum(hard_mining, 0.0)
+    #triplet_loss = mx.sym.maximum(hardest_positive_dist - hardest_negative_dist + margin, 0.0)
     if margin == 'soft':
         triplet_loss = mx.sym.log10(
             mx.sym.broadcast_add(
