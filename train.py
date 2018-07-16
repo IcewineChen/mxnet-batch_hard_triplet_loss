@@ -224,34 +224,57 @@ def main():
                          width=args.width,process_num=args.process_num)
 
     optimizer = mx.optimizer.SGD({'learning_rate': 0.01, 'momentum': 0.99})
+    
     # model = mx.mod.Module(symbol,data_names=["samples"],label_names=["labels"],context=devs)
     # model.bind(data_shapes=train_data.provide_data,
     #            label_shapes=train_data.provide_label)
     # model.init_params(initializer=mx.initializer.Xavier(magnitude=2.))
 
-    model = mx.model.FeedForward(
-        allow_extra_params=True,
-        ctx=devs,
-        symbol=symbol,
-        num_epoch=epoch_size,
-        begin_epoch=begin_epoch,
-        learning_rate=0.01,
-        wd=0.001,
-        momentum=0.9,
-        initializer=mx.initializer.Xavier(rnd_type="gaussian", factor_type="in", magnitude=2),
-        optimizer=optimizer,
-        lr_scheduler = multi_factor_scheduler(0, 200, step=[30, 60, 90], factor=0.1)
-    )
+    model = mx.mod.Module(symbol=symbol,data_names=('samples',),
+                          label_names=('labels',),context=devs)
+    model.bind(data_shapes=train_data.provide_data,
+               label_shapes=train_data.provide_label,inputs_need_grad=True)
+    model.init_params(initializer=mx.initializer.Xavier(magnitude=2.))
+    model.init_optimizer(optimizer='sgd',
+                         optimizer_params=(('learning_rate',0.1),
+                                            ('momentum',0.99)
+                        ))
+    metric = mx.metric.create('acc')
+    
+    for epoch in epoch_size:
+        train_data.reset()
+        metric.reset()
+        for batch in train_data:
+            model.forward(batch,is_train=True)
+            model.update_metric(metric,batch.label)
+            model.backward()
+            model.update()
+        print("epoch %d, Training %s").format(epoch,metric.get())
+            
 
-    model.fit(
-        train_data,
-        # num_epoch=0,
-        # eval_metric='acc'
-        eval_metric=Auc(),
-        # kvstore=kv,
-        batch_end_callback=mx.callback.Speedometer(args.batch_size,20),
-        epoch_end_callback=mx.callback.do_checkpoint(args.model_prefix)
-    )
+    # model = mx.model.FeedForward(
+    #    allow_extra_params=True,
+    #    ctx=devs,
+    #    symbol=symbol,
+    #    num_epoch=epoch_size,
+    #    begin_epoch=begin_epoch,
+    #    learning_rate=0.01,
+    #    wd=0.001,
+    #    momentum=0.9,
+    #    initializer=mx.initializer.Xavier(rnd_type="gaussian", factor_type="in", magnitude=2),
+    #    optimizer=optimizer,
+    #    lr_scheduler = multi_factor_scheduler(0, 200, step=[30, 60, 90], factor=0.1)
+    #)
+
+    # model.fit(
+    #    train_data,
+    #    num_epoch=0,
+    #    eval_metric='acc'
+    #    eval_metric=Auc(),
+    #    kvstore=kv,
+    #    batch_end_callback=mx.callback.Speedometer(args.batch_size,20),
+    #    epoch_end_callback=mx.callback.do_checkpoint(args.model_prefix)
+    #)
 
 
 
