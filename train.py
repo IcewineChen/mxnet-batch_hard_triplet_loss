@@ -45,7 +45,7 @@ class DataIter(mx.io.DataIter):
         self.images = images  
         self.labels = labels   
         self.cursor = -self.batch_size
-
+        self.label_width = 1
         self.provide_data = [("samples", (self.batch_size, 3, height, width))]
         #self.provide_data = [("samples", (self.batch_size, 3, height, width)),
         #                     ("pos_mask", (self.batch_size, self.batch_size)),
@@ -97,8 +97,8 @@ class DataIter(mx.io.DataIter):
                 break
             batch_data, batch_labels = self.generate_batch()
             batch = [x.transpose(2,0,1) for x in batch_data]
-            data = mx.nd.array(batch)
-            labels = mx.nd.array(batch_labels)
+            data = [mx.nd.array(batch)]
+            labels = [mx.nd.array(batch_labels)]
             # labels = mx.nd.expand_dims(mx.nd.array(batch_labels),axis=0)
             # pos_mask = self.get_pos_mask(labels)
             # neg_mask = self.get_neg_mask(labels)
@@ -133,11 +133,10 @@ class DataIter(mx.io.DataIter):
 def network(units, embedding_dims, num_stage, filter_list, num_class, bottle_neck, bn_mom, workspace, margin, batch_size, type='euclidean'):
     samples = mx.sym.Variable("samples")
     labels = mx.sym.Variable("labels")
+    labels = mx.sym.reshape(labels,(1,72))
     # concat = mx.sym.Concat(*data,dim=0,name="concat")
     # pos_mask = mx.sym.Variable('pos_mask')
     # neg_mask = mx.sym.Variable('neg_mask')
-    # labels = mx.sym.Variable('pids')
-    # data = mx.sym.expand_dims(data,axis=0)
     embeddings = resnet.resnet(
         data=samples,
         units=units,
@@ -150,6 +149,7 @@ def network(units, embedding_dims, num_stage, filter_list, num_class, bottle_nec
         bn_mom=bn_mom,
         workspace=workspace)
     # embeddings = mx.sym.expand_dims(embeddings,axis=0)
+
     return batch_hard.batch_hard_triplet_loss(embeddings=embeddings,
                                                    #pos_mask=pos_mask,
                                                    #neg_mask=neg_mask,
@@ -182,7 +182,8 @@ def main():
     labels, images = dataset.load_dataset(args.trainlist,args.dataset_path)
 
     kv = mx.kvstore.create(args.kv_store)
-    devs = mx.cpu() if args.gpus is None else [mx.gpu(int(i)) for i in args.gpus.split(',')]
+    # devs = mx.cpu() if args.gpus is None else [mx.gpu(int(i)) for i in args.gpus.split(',')]
+    devs = [mx.gpu(0)]
     if args.depth == 18:
         units = [2, 2, 2, 2]
     elif args.depth == 34:

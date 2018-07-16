@@ -48,7 +48,6 @@ def resnet(data, units, embedding_dims, num_stage, filter_list, num_class, data_
     assert(num_unit == num_stage)
     # data = mx.sym.Variable(name='data')
     data = mx.sym.BatchNorm(data=data, fix_gamma=True, eps=2e-5, momentum=bn_mom, name='bn_data')
-    
     body = mx.sym.Convolution(data=data, num_filter=filter_list[0], kernel=(7, 7), stride=(2,2), pad=(3, 3),
                                 no_bias=True, name="conv0", workspace=workspace)
     body = mx.sym.BatchNorm(data=body, fix_gamma=False, eps=2e-5, momentum=bn_mom, name='bn0')
