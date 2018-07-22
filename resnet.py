@@ -42,7 +42,7 @@ def residual_unit(data,num_filter,stride,dim_match,name,bottle_neck=True,bn_mom=
             shortcut._set_attr(mirror_stage='True')
         return conv2 + shortcut
 
-def resnet(data, labels, batch_size, margin, units, embedding_dims, num_stage, filter_list, num_class, data_type, bottle_neck=True, bn_mom=0.9, workspace=512, memonger=False, type='euclidean'):
+def resnet(data, labels, batch_size, margin, units, embedding_dims, num_stage, filter_list, num_class, bottle_neck=True, bn_mom=0.9, workspace=512, memonger=False, type='euclidean'):
     num_unit = len(units)
     assert(num_unit == num_stage)
     # data = mx.sym.Variable(name='data')
@@ -66,16 +66,18 @@ def resnet(data, labels, batch_size, margin, units, embedding_dims, num_stage, f
     # get embeddings
     emb = mx.sym.FullyConnected(data=flat, num_hidden=embedding_dims,name='embeddings')
 
-    # print(emb.infer_shape_partial(samples=(72, 3, 256, 144)))
-
     dot_product = mx.sym.dot(emb,mx.sym.transpose(emb),name='dot')
     square_L2_emb = mx.sym.square(mx.sym.norm(dot_product,ord=2,axis=0),name='squ_l2')
+
+    # arg, out1, aux = square_L2_emb.infer_shape_partial(samples=(72, 3, 256, 144))
+
     distances = mx.sym.broadcast_sub(
         mx.sym.broadcast_add(mx.sym.expand_dims(square_L2_emb,0),mx.sym.expand_dims(square_L2_emb,axis=1)),
         mx.sym.broadcast_add(square_L2_emb,square_L2_emb),
         name='distance_1'
     )
     distances = mx.sym.maximum(distances,0.0)
+
     if type=='euclidean':
         distances = mx.sym.sqrt(distances,name='eu_distance')
     elif type=='sqeuclidean':
@@ -85,15 +87,17 @@ def resnet(data, labels, batch_size, margin, units, embedding_dims, num_stage, f
 
     pos_indices_equal=mx.sym.eye(batch_size)
     pos_indices_not_equal = mx.sym.logical_not(pos_indices_equal)
+
     pos_labels_equal = mx.sym.broadcast_equal(mx.sym.expand_dims(labels,0), mx.sym.expand_dims(labels,1))
 
-    pos_mask = mx.sym.broadcast_logical_and(pos_indices_not_equal,pos_labels_equal,name='pos_mask')
+    pos_mask = mx.sym.squeeze(mx.sym.broadcast_logical_and(pos_indices_not_equal,pos_labels_equal,name='pos_mask'))
 
-    neg_labels_equal = mx.sym.broadcast_equal(mx.sym.expand_dims(labels,axis=0),mx.sym.expand_dims(labels,axis=1))
+    neg_labels_equal = mx.sym.broadcast_equal(mx.sym.squeeze(mx.sym.expand_dims(labels, axis=0),axis=0),mx.sym.squeeze(mx.sym.expand_dims(labels,axis=2),axis=0))
     neg_mask = mx.sym.logical_not(neg_labels_equal,name='neg_mask')
 
     # batch_hard
     pos_anchor_dist = mx.sym.broadcast_mul(pos_mask,distances,name='pos_dist')
+
     hardest_pos_dist = mx.sym.max(pos_anchor_dist,axis=1,keepdims=True,name='pos_hardest')
 
     max_neg_anchor_dist = mx.sym.max(distances,axis=1,keepdims=True)
@@ -104,20 +108,20 @@ def resnet(data, labels, batch_size, margin, units, embedding_dims, num_stage, f
                                                neg_mask)),name='neg_dist'
                                            )
 
-    hardest_neg_dist = mx.sym.min(neg_anchor_dist,name='neg_hardest')
+    hardest_neg_dist = mx.sym.min(neg_anchor_dist,axis=1,keepdims=True,name='neg_hardest')
 
     loss_shape = [batch_size,1]
     margin = mx.sym.full(shape=loss_shape,val=margin)
     cpm_zero = mx.sym.full(shape=loss_shape,val=0.0)
     triplet_loss = mx.sym.maximum(
         mx.sym.broadcast_add(
-            mx.sym.broadcast_sub(hardest_pos_dist,hardest_neg_dist),margin
+            mx.sym.broadcast_sub(hardest_pos_dist,hardest_neg_dist), margin
         ),
         cpm_zero
     )
     # triplet_loss = mx.sym.maximum(hardest_pos_dist - hardest_neg_dist + margin, mx.sym.full(shape=loss_shape,val=0.0))
-    # arg, out1, aux = hardest_pos_dist.infer_shape_partial(samples=(72, 3, 256, 144), labels=(72,))
+
+    triplet_loss = mx.sym.mean(triplet_loss,axis=1,name='tri_loss')
     # m1, out2, m3 = triplet_loss.infer_shape_partial(samples=(72, 3, 256, 128), labels=(72,))
-    triplet_loss = mx.sym.mean(triplet_loss,name='tri_loss')
     return mx.sym.MakeLoss(triplet_loss)
 

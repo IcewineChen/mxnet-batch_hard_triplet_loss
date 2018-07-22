@@ -21,18 +21,6 @@ class Auc(mx.metric.EvalMetric):
         self.sum_metric += np.sum(pred)
         self.num_inst += len(pred)
 
-
-class DataBase(object):
-    def __init__(self,data,label):
-        self.data = data
-        self.label = label
-
-    def getdata(self):
-        return self.data
-
-    def getlabel(self):
-        return self.label
-
 class DataIter(mx.io.DataIter):
     def __init__(self, images, labels, batch_size, height, width, process_num):
         assert process_num <= 40
@@ -44,13 +32,8 @@ class DataIter(mx.io.DataIter):
         self.images = images  
         self.labels = labels   
         self.cursor = -self.batch_size
-<<<<<<< HEAD
-        self.label_width = 1
-        self.provide_data = [("samples", (self.batch_size, 3, height, width))]
-=======
-
+        
         self.provide_data = [( "samples", (self.batch_size, 3, height, width))]
->>>>>>> 70284ad85604842bc7f1d833509f6046f39b4396
         #self.provide_data = [("samples", (self.batch_size, 3, height, width)),
         #                     ("pos_mask", (self.batch_size, self.batch_size)),
         #                     ("neg_mask", (self.batch_size, self.batch_size))]
@@ -103,13 +86,8 @@ class DataIter(mx.io.DataIter):
             batch = [x.transpose(2,0,1) for x in batch_data]
             data = [mx.nd.array(batch)]
             labels = [mx.nd.array(batch_labels)]
-            # labels = mx.nd.expand_dims(mx.nd.array(batch_labels),axis=0)
-            # pos_mask = self.get_pos_mask(labels)
-            # neg_mask = self.get_neg_mask(labels)
 
-            #data_plus_mask = [data,pos_mask,neg_mask]
-            #data_batch = DataBase(data_plus_mask,labels)
-            data_batch = DataBase(data,labels)
+            data_batch = mx.io.DataBatch(data,labels)
             self.queue.put(data_batch)
 
     def __del__(self):
@@ -141,13 +119,9 @@ def network(units, embedding_dims, num_stage, filter_list, num_class, bottle_nec
     # concat = mx.sym.Concat(*data,dim=0,name="concat")
     # pos_mask = mx.sym.Variable('pos_mask')
     # neg_mask = mx.sym.Variable('neg_mask')
-<<<<<<< HEAD
-    embeddings = resnet.resnet(
-=======
     # labels = mx.sym.Variable('pids')
     # data = mx.sym.expand_dims(data,axis=0)
     tripletloss = resnet.resnet(
->>>>>>> 70284ad85604842bc7f1d833509f6046f39b4396
         data=samples,
         labels=labels,
         batch_size=batch_size,
@@ -157,7 +131,6 @@ def network(units, embedding_dims, num_stage, filter_list, num_class, bottle_nec
         num_stage=num_stage,
         filter_list=filter_list,
         num_class=num_class,
-        data_type="imagenet",
         bottle_neck=bottle_neck,
         bn_mom=bn_mom,
         workspace=workspace,
@@ -166,16 +139,6 @@ def network(units, embedding_dims, num_stage, filter_list, num_class, bottle_nec
     # test
     return tripletloss
     # embeddings = mx.sym.expand_dims(embeddings,axis=0)
-<<<<<<< HEAD
-
-    return batch_hard.batch_hard_triplet_loss(embeddings=embeddings,
-                                                   #pos_mask=pos_mask,
-                                                   #neg_mask=neg_mask,
-                                                   labels=labels,
-                                                   shape=batch_size,
-                                                   margin=margin,
-                                                   type=type)
-=======
     # return batch_hard.batch_hard_triplet_loss(embeddings=embeddings,
     #                                               #pos_mask=pos_mask,
     #                                               #neg_mask=neg_mask,
@@ -183,7 +146,6 @@ def network(units, embedding_dims, num_stage, filter_list, num_class, bottle_nec
     #                                               labels=labels,
     #                                               margin=margin,
     #                                               type=type)
->>>>>>> 70284ad85604842bc7f1d833509f6046f39b4396
 
 def multi_factor_scheduler(begin_epoch,epoch_size,step,factor=0.1):
     step_ = [epoch_size * (x - begin_epoch) for x in step if x -begin_epoch > 0]
@@ -252,18 +214,18 @@ def main():
     #            label_shapes=train_data.provide_label)
     # model.init_params(initializer=mx.initializer.Xavier(magnitude=2.))
 
-    model = mx.mod.Module(symbol=symbol,data_names=('samples',),
-                          label_names=('labels',),context=devs)
+    model = mx.mod.Module(symbol=symbol, data_names=['samples', ],
+                          label_names=['labels', ], context=devs)
     model.bind(data_shapes=train_data.provide_data,
                label_shapes=train_data.provide_label,inputs_need_grad=True)
     model.init_params(initializer=mx.initializer.Xavier(magnitude=2.))
     model.init_optimizer(optimizer='sgd',
-                         optimizer_params=(('learning_rate',0.1),
-                                            ('momentum',0.99)
-                        ))
+                         optimizer_params={'learning_rate': 0.1,
+                                           'momentum': 0.99
+                                           })
     metric = mx.metric.create('acc')
     
-    for epoch in epoch_size:
+    for epoch in range(epoch_size):
         train_data.reset()
         metric.reset()
         for batch in train_data:
