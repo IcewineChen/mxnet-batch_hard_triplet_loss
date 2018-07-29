@@ -18,10 +18,11 @@ Based on some tricks from omoindrot's repository. (https://github.com/omoindrot/
 
 ## Requirements
 The code has been tested with CUDA 8.0 and ubuntu 16.04.
-
 python3\
-mxnet-cu80==1.3\
+mxnet-cu80==1.3
 
+how to train:\
+See parser in train.py.Set your dataset path and some params of based resnet network.
 
 
 
