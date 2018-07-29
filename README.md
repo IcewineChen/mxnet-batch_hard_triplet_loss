@@ -16,7 +16,11 @@ Based on some tricks from omoindrot's repository. (https://github.com/omoindrot/
 1. Using triplet loss to train embeddings
 1. the network is defined in resnet.py
 
+## Requirements
+The code has been tested with CUDA 8.0 and ubuntu 16.04.
 
+python3\
+mxnet-cu80==1.3\
 
 
 
