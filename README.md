@@ -1,7 +1,6 @@
 ﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿Mxnet-version batch hard triplet loss
 ---
 Based on <In defense of triplet loss> (https://arxiv.org/abs/1703.07737) 
-
 Based on some tricks from omoindrot's repository. (https://github.com/omoindrot/tensorflow-triplet-loss)
 
 ## Introduction
@@ -23,7 +22,6 @@ mxnet-cu80==1.3
 
 how to train:\
 See parsers in train.py. Then Set your dataset path and some params of based resnet network.
-
 The network has been defined in resnet.py.Batch_hard.py now has been deprecated. 
 
 
