@@ -24,6 +24,8 @@ mxnet-cu80==1.3
 how to train:\
 See parsers in train.py. Then Set your dataset path and some params of based resnet network.
 
+The network has been defined in resnet.py.Batch_hard.py now has been deprecated. 
+
 
 
 
