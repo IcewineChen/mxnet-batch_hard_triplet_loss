@@ -17,9 +17,9 @@ Based on some tricks from omoindrot's repository. (https://github.com/omoindrot/
 1. the network is defined in resnet.py
 
 ## Requirements
-The code has been tested with CUDA 8.0 and ubuntu 16.04.\
-python3\
-mxnet-cu80==1.3
+The code has been tested with CUDA 8.0 and ubuntu 16.04.
+- python3
+- mxnet-cu80==1.3
 
 how to train:\
 See parsers in train.py. Then Set your dataset path and some params of based resnet network.\
